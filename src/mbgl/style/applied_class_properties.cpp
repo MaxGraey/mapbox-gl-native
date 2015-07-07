@@ -18,7 +18,7 @@ void AppliedClassProperties::add(ClassID class_id, TimePoint begin, TimePoint en
 }
 
 bool AppliedClassProperties::hasTransitions() const {
-    return properties.size() > 1;
+    return !properties.empty();
 }
 
 // Erase all items in the property list that are before a completed transition.
