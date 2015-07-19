@@ -109,10 +109,11 @@ if [ -z `which appledoc` ]; then
     exit 1
 fi
 DOCS_OUTPUT="${OUTPUT}/static/Docs"
+git fetch --tags
 DOCS_VERSION=$( git tag --sort -v:refname | grep -v '\-rc.' | sed -n '1p' | sed 's/^v//' )
 rm -rf /tmp/mbgl
 mkdir -p /tmp/mbgl/
-README=/tmp/mbgl/GL-README.md
+README=/tmp/mbgl/README.md
 cat ios/README.md > ${README}
 echo >> ${README}
 echo -n "#" >> ${README}
@@ -133,3 +134,4 @@ appledoc \
     --company-id com.mapbox \
     --index-desc ${README} \
     /tmp/mbgl/Headers
+cp ${README} "${OUTPUT}/static"

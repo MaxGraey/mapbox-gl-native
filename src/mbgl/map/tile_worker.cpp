@@ -44,11 +44,6 @@ Bucket* TileWorker::getBucket(const StyleLayer& layer) const {
     return it->second.get();
 }
 
-size_t TileWorker::countBuckets() const {
-    std::lock_guard<std::mutex> lock(bucketsMutex);
-    return buckets.size();
-}
-
 TileParseResult TileWorker::parse(const GeometryTile& geometryTile) {
     partialParse = false;
 
@@ -73,7 +68,7 @@ void TileWorker::redoPlacement(float angle, bool collisionDebug) {
 template <typename T>
 struct PropertyEvaluator {
     typedef T result_type;
-    PropertyEvaluator(float z_) : z(z_) {}
+    explicit PropertyEvaluator(float z_) : z(z_) {}
 
     template <typename P, typename std::enable_if<std::is_convertible<P, T>::value, int>::type = 0>
     T operator()(const P &value) const {
