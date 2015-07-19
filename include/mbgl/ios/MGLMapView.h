@@ -212,6 +212,8 @@ IB_DESIGNABLE
 *   To display the default style, set this property to `nil`. */
 @property (nonatomic, null_resettable) NSURL *styleURL;
 
+@property (nonatomic, null_resettable) NSString *styleJSON;
+
 /** Currently active style classes, represented as an array of string identifiers. */
 @property (nonatomic) NS_ARRAY_OF(NSString *) *styleClasses;
 

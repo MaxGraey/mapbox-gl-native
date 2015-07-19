@@ -203,6 +203,21 @@ std::chrono::steady_clock::duration secondsAsDuration(float duration)
     _mbglMap->setStyleURL([[styleURL absoluteString] UTF8String]);
 }
 
+
+- (nonnull NSString *)styleJSON {
+    return @(_mbglMap->getStyleJSON().c_str()).mgl_stringOrNilIfEmpty;
+}
+
+
+- (void)setStyleJSON:(nullable NSString *)jsonString {
+    
+    if (!jsonString || jsonString.length == 0)
+        [self setStyleURL:nil];
+    
+    _mbglMap->setStyleJSON([jsonString UTF8String], ".");
+}
+
+
 - (void)commonInit
 {
     _isTargetingInterfaceBuilder = NSProcessInfo.processInfo.mgl_isInterfaceBuilderDesignablesAgent;
