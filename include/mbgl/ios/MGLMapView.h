@@ -214,6 +214,8 @@ IB_DESIGNABLE
 
 @property (nonatomic, null_resettable) NSString *styleJSON;
 
+- (void)setStyleJSON:(nullable NSString *)jsonString base:(nullable NSString *)base;
+
 /** Currently active style classes, represented as an array of string identifiers. */
 @property (nonatomic) NS_ARRAY_OF(NSString *) *styleClasses;
 

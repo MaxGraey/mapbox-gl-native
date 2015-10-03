@@ -209,12 +209,12 @@ std::chrono::steady_clock::duration secondsAsDuration(float duration)
 }
 
 
+- (void)setStyleJSON:(nullable NSString *)jsonString base:(nullable NSString *)base {
+    _mbglMap->setStyleJSON([jsonString UTF8String], [base UTF8String]);
+}
+
 - (void)setStyleJSON:(nullable NSString *)jsonString {
-    
-    if (!jsonString || jsonString.length == 0)
-        [self setStyleURL:nil];
-    
-    _mbglMap->setStyleJSON([jsonString UTF8String], ".");
+    [self setStyleJSON: jsonString base: @"."];
 }
 
 
