@@ -17,7 +17,7 @@ namespace android {
 
 class NativeMapView : public mbgl::View, private mbgl::util::noncopyable {
 public:
-    NativeMapView(JNIEnv *env, jobject obj, float pixelRatio);
+    NativeMapView(JNIEnv *env, jobject obj, float pixelRatio, int availableProcessors, size_t totalMemory);
     virtual ~NativeMapView();
 
     float getPixelRatio() const override;
@@ -27,7 +27,8 @@ public:
     void deactivate() override;
     void notify() override;
     void invalidate() override;
-    void swap() override;
+    void beforeRender() override;
+    void afterRender() override;
 
     void notifyMapChange(mbgl::MapChange) override;
 
@@ -49,7 +50,7 @@ public:
     void enableFps(bool enable);
     void updateFps();
 
-    void onInvalidate();
+    void renderSync();
 
     void resizeView(int width, int height);
     void resizeFramebuffer(int width, int height);
@@ -61,7 +62,7 @@ private:
 
 private:
     JavaVM *vm = nullptr;
-    jobject obj = nullptr;
+    jweak obj = nullptr;
 
     ANativeWindow *window = nullptr;
     EGLDisplay display = EGL_NO_DISPLAY;
@@ -85,12 +86,13 @@ private:
     int fbHeight = 0;
     const float pixelRatio;
 
-    // Ensure these are initialised last
-    mbgl::SQLiteCache fileCache;
-    mbgl::DefaultFileSource fileSource;
-    mbgl::Map map;
+    int availableProcessors = 0;
+    size_t totalMemory = 0;
 
-    std::atomic_flag clean = ATOMIC_FLAG_INIT;
+    // Ensure these are initialised last
+    std::shared_ptr<mbgl::SQLiteCache> fileCache;
+    std::unique_ptr<mbgl::DefaultFileSource> fileSource;
+    std::unique_ptr<mbgl::Map> map;
 };
 }
 }

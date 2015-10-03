@@ -26,7 +26,6 @@
         '../mbgl.gyp:asset-<(asset_lib)',
         '../mbgl.gyp:cache-<(cache_lib)',
         '../mbgl.gyp:headless-<(headless_lib)',
-        '../deps/gtest/gtest.gyp:gtest'
       ],
       'sources': [
         'fixtures/main.cpp',
@@ -50,13 +49,12 @@
         'api/repeated_render.cpp',
         'api/set_style.cpp',
 
-        'headless/custom_sprites.cpp',
-        'headless/headless.cpp',
 
         'miscellaneous/clip_ids.cpp',
         'miscellaneous/binpack.cpp',
         'miscellaneous/bilinear.cpp',
         'miscellaneous/comparisons.cpp',
+        'miscellaneous/custom_sprites.cpp',
         'miscellaneous/enums.cpp',
         'miscellaneous/functions.cpp',
         'miscellaneous/geo.cpp',
@@ -94,19 +92,24 @@
         'style/sprite.cpp',
       ],
       'libraries': [
-        '<@(uv_static_libs)',
-        '<@(sqlite3_static_libs)',
+        '<@(gtest_static_libs)',
+        '<@(libuv_static_libs)',
+        '<@(sqlite_static_libs)',
       ],
       'variables': {
         'cflags_cc': [
-          '<@(uv_cflags)',
+          '<@(gtest_cflags)',
+          '<@(libuv_cflags)',
           '<@(opengl_cflags)',
           '<@(boost_cflags)',
-          '<@(sqlite3_cflags)',
+          '<@(sqlite_cflags)',
+          '<@(variant_cflags)',
+          '<@(rapidjson_cflags)',
         ],
         'ldflags': [
-          '<@(uv_ldflags)',
-          '<@(sqlite3_ldflags)',
+          '<@(gtest_ldflags)',
+          '<@(libuv_ldflags)',
+          '<@(sqlite_ldflags)',
         ],
       },
       'conditions': [

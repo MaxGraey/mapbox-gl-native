@@ -28,11 +28,23 @@
 
 #pragma mark - Setup
 
++ (void)initialize
+{
+    if (self == [MBXBenchViewController class])
+    {
+        [[NSUserDefaults standardUserDefaults] registerDefaults:@{
+            @"MBXUserTrackingMode": @(MGLUserTrackingModeNone),
+            @"MBXShowsUserLocation": @NO,
+            @"MBXDebug": @NO,
+        }];
+    }
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
 
-    NSURL* url = [[NSURL alloc] initWithString:@"asset://styles/mapbox-streets-v7.json"];
+    NSURL* url = [[NSURL alloc] initWithString:@"asset://styles/streets-v8.json"];
     self.mapView = [[MGLMapView alloc] initWithFrame:self.view.bounds styleURL:url];
     self.mapView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.mapView.delegate = self;

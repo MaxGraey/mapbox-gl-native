@@ -5,6 +5,8 @@
 #include <mbgl/platform/gl.hpp>
 #include <mbgl/platform/log.hpp>
 #include <mbgl/platform/platform.hpp>
+#include <mbgl/util/gl_object_store.hpp>
+#include <mbgl/util/thread_context.hpp>
 
 #include <cassert>
 #include <algorithm>
@@ -18,6 +20,15 @@ GlyphAtlas::GlyphAtlas(uint16_t width_, uint16_t height_)
       bin(width_, height_),
       data(std::make_unique<uint8_t[]>(width_ * height_)),
       dirty(true) {
+}
+
+GlyphAtlas::~GlyphAtlas() {
+    assert(util::ThreadContext::currentlyOn(util::ThreadType::Map));
+
+    if (texture) {
+        mbgl::util::ThreadContext::getGLObjectStore()->abandonTexture(texture);
+        texture = 0;
+    }
 }
 
 void GlyphAtlas::addGlyphs(uintptr_t tileUID,
@@ -61,7 +72,7 @@ Rect<uint16_t> GlyphAtlas::addGlyph(uintptr_t tileUID,
     }
 
     // The glyph bitmap has zero width.
-    if (!glyph.bitmap.size()) {
+    if (glyph.bitmap.empty()) {
         return Rect<uint16_t>{ 0, 0, 0, 0 };
     }
 
@@ -114,7 +125,7 @@ void GlyphAtlas::removeGlyphs(uintptr_t tileUID) {
             GlyphValue& value = it->second;
             value.ids.erase(tileUID);
 
-            if (!value.ids.size()) {
+            if (value.ids.empty()) {
                 const Rect<uint16_t>& rect = value.rect;
 
                 // Clear out the bitmap.

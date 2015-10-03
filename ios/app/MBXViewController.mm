@@ -1,25 +1,20 @@
 #import "MBXViewController.h"
 
-#import <mbgl/ios/MapboxGL.h>
-
-#import <mbgl/platform/darwin/settings_nsuserdefaults.hpp>
+#import <mbgl/ios/Mapbox.h>
 
 #import <CoreLocation/CoreLocation.h>
 
 static UIColor *const kTintColor = [UIColor colorWithRed:0.120 green:0.550 blue:0.670 alpha:1.000];
 
 static NSArray *const kStyleNames = @[
-    @"Mapbox Streets",
+    @"Streets",
     @"Emerald",
     @"Light",
     @"Dark",
-    @"Bright",
-    @"Basic",
-    @"Outdoors",
     @"Satellite",
 ];
 
-static NSString *const kStyleVersion = @"7";
+static NSUInteger const kStyleVersion = 8;
 
 @interface MBXViewController () <UIActionSheetDelegate, MGLMapViewDelegate>
 
@@ -29,9 +24,19 @@ static NSString *const kStyleVersion = @"7";
 
 @implementation MBXViewController
 
-mbgl::Settings_NSUserDefaults *settings = nullptr;
-
 #pragma mark - Setup
+
++ (void)initialize
+{
+    if (self == [MBXViewController class])
+    {
+        [[NSUserDefaults standardUserDefaults] registerDefaults:@{
+            @"MBXUserTrackingMode": @(MGLUserTrackingModeNone),
+            @"MBXShowsUserLocation": @NO,
+            @"MBXDebug": @NO,
+        }];
+    }
+}
 
 - (id)init
 {
@@ -41,6 +46,7 @@ mbgl::Settings_NSUserDefaults *settings = nullptr;
     {
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveState:) name:UIApplicationDidEnterBackgroundNotification object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(restoreState:) name:UIApplicationWillEnterForegroundNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveState:) name:UIApplicationWillTerminateNotification object:nil];
     }
 
     return self;
@@ -52,7 +58,6 @@ mbgl::Settings_NSUserDefaults *settings = nullptr;
 
     self.mapView = [[MGLMapView alloc] initWithFrame:self.view.bounds];
     self.mapView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    self.mapView.showsUserLocation = YES;
     self.mapView.delegate = self;
     [self.view addSubview:self.mapView];
 
@@ -77,34 +82,42 @@ mbgl::Settings_NSUserDefaults *settings = nullptr;
                                                                              target:self
                                                                              action:@selector(locateUser)];
 
-    settings = new mbgl::Settings_NSUserDefaults();
     [self restoreState:nil];
 }
 
 - (void)saveState:(__unused NSNotification *)notification
 {
-    if (self.mapView && settings)
+    if (self.mapView)
     {
-        settings->longitude = self.mapView.centerCoordinate.longitude;
-        settings->latitude = self.mapView.centerCoordinate.latitude;
-        settings->zoom = self.mapView.zoomLevel;
-        settings->bearing = self.mapView.direction;
-        settings->debug = self.mapView.isDebugActive;
-        settings->userTrackingMode = self.mapView.userTrackingMode;
-        settings->showsUserLocation = self.mapView.showsUserLocation;
-        settings->save();
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        NSData *archivedCamera = [NSKeyedArchiver archivedDataWithRootObject:self.mapView.camera];
+        [defaults setObject:archivedCamera forKey:@"MBXCamera"];
+        [defaults setInteger:self.mapView.userTrackingMode forKey:@"MBXUserTrackingMode"];
+        [defaults setBool:self.mapView.showsUserLocation forKey:@"MBXShowsUserLocation"];
+        [defaults setBool:self.mapView.debugActive forKey:@"MBXDebug"];
+        [defaults synchronize];
     }
 }
 
 - (void)restoreState:(__unused NSNotification *)notification
 {
-    if (self.mapView && settings) {
-        settings->load();
-        [self.mapView setCenterCoordinate:CLLocationCoordinate2DMake(settings->latitude, settings->longitude) zoomLevel:settings->zoom animated:NO];
-        self.mapView.direction = settings->bearing;
-        self.mapView.userTrackingMode = settings->userTrackingMode;
-        self.mapView.showsUserLocation = settings->showsUserLocation;
-        [self.mapView setDebugActive:settings->debug];
+    if (self.mapView) {
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        NSData *archivedCamera = [defaults objectForKey:@"MBXCamera"];
+        MGLMapCamera *camera = archivedCamera ? [NSKeyedUnarchiver unarchiveObjectWithData:archivedCamera] : nil;
+        if (camera)
+        {
+            self.mapView.camera = camera;
+        }
+        NSInteger uncheckedTrackingMode = [defaults integerForKey:@"MBXUserTrackingMode"];
+        if (uncheckedTrackingMode >= 0 &&
+            (NSUInteger)uncheckedTrackingMode >= MGLUserTrackingModeNone &&
+            (NSUInteger)uncheckedTrackingMode <= MGLUserTrackingModeFollowWithCourse)
+        {
+            self.mapView.userTrackingMode = (MGLUserTrackingMode)uncheckedTrackingMode;
+        }
+        self.mapView.showsUserLocation = [defaults boolForKey:@"MBXShowsUserLocation"];
+        self.mapView.debugActive = [defaults boolForKey:@"MBXDebug"];
     }
 }
 
@@ -301,27 +314,31 @@ mbgl::Settings_NSUserDefaults *settings = nullptr;
     }
 
     self.mapView.styleURL = [NSURL URLWithString:
-        [NSString stringWithFormat:@"asset://styles/%@-v%@.json",
-            [[styleName lowercaseString] stringByReplacingOccurrencesOfString:@" " withString:@"-"],
-            kStyleVersion]];
+        [NSString stringWithFormat:@"asset://styles/%@-v%lu.json",
+            [styleName lowercaseString],
+            (unsigned long)kStyleVersion]];
 
     [titleButton setTitle:styleName forState:UIControlStateNormal];
 }
 
 - (void)locateUser
 {
-    if (self.mapView.userTrackingMode == MGLUserTrackingModeNone)
-    {
-        self.mapView.userTrackingMode = MGLUserTrackingModeFollow;
+    MGLUserTrackingMode nextMode;
+    switch (self.mapView.userTrackingMode) {
+        case MGLUserTrackingModeNone:
+            nextMode = MGLUserTrackingModeFollow;
+            break;
+        case MGLUserTrackingModeFollow:
+            nextMode = MGLUserTrackingModeFollowWithHeading;
+            break;
+        case MGLUserTrackingModeFollowWithHeading:
+            nextMode = MGLUserTrackingModeFollowWithCourse;
+            break;
+        case MGLUserTrackingModeFollowWithCourse:
+            nextMode = MGLUserTrackingModeNone;
+            break;
     }
-    else if (self.mapView.userTrackingMode == MGLUserTrackingModeFollow)
-    {
-        self.mapView.userTrackingMode = MGLUserTrackingModeFollowWithHeading;
-    }
-    else
-    {
-        self.mapView.userTrackingMode = MGLUserTrackingModeNone;
-    }
+    self.mapView.userTrackingMode = nextMode;
 }
 
 #pragma mark - Destruction
@@ -330,12 +347,7 @@ mbgl::Settings_NSUserDefaults *settings = nullptr;
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 
-    if (settings)
-    {
-        [self saveState:nil];
-        delete settings;
-        settings = nullptr;
-    }
+    [self saveState:nil];
 }
 
 #pragma mark - MGLMapViewDelegate
@@ -344,6 +356,15 @@ mbgl::Settings_NSUserDefaults *settings = nullptr;
 {
     NSString *title = [(MGLPointAnnotation *)annotation title];
     NSString *lastTwoCharacters = [title substringFromIndex:title.length - 2];
+
+    UIColor *color;
+
+    // make every tenth annotation blue
+    if ([lastTwoCharacters hasSuffix:@"0"]) {
+        color = [UIColor blueColor];
+    } else {
+        color = [UIColor redColor];
+    }
 
     MGLAnnotationImage *image = [mapView dequeueReusableAnnotationImageWithIdentifier:lastTwoCharacters];
 
@@ -355,7 +376,7 @@ mbgl::Settings_NSUserDefaults *settings = nullptr;
 
         CGContextRef ctx = UIGraphicsGetCurrentContext();
 
-        CGContextSetFillColorWithColor(ctx, [[[UIColor redColor] colorWithAlphaComponent:0.75] CGColor]);
+        CGContextSetFillColorWithColor(ctx, [[color colorWithAlphaComponent:0.75] CGColor]);
         CGContextFillRect(ctx, rect);
 
         CGContextSetStrokeColorWithColor(ctx, [[UIColor blackColor] CGColor]);
@@ -372,6 +393,9 @@ mbgl::Settings_NSUserDefaults *settings = nullptr;
         [drawString drawInRect:stringRect];
 
         image = [MGLAnnotationImage annotationImageWithImage:UIGraphicsGetImageFromCurrentImageContext() reuseIdentifier:lastTwoCharacters];
+
+        // don't allow touches on blue annotations
+        if ([color isEqual:[UIColor blueColor]]) image.enabled = NO;
 
         UIGraphicsEndImageContext();
     }
@@ -402,6 +426,7 @@ mbgl::Settings_NSUserDefaults *settings = nullptr;
 - (void)mapView:(__unused MGLMapView *)mapView didChangeUserTrackingMode:(MGLUserTrackingMode)mode animated:(__unused BOOL)animated
 {
     UIImage *newButtonImage;
+    NSString *newButtonTitle;
     
     switch (mode) {
         case MGLUserTrackingModeNone:
@@ -415,8 +440,13 @@ mbgl::Settings_NSUserDefaults *settings = nullptr;
         case MGLUserTrackingModeFollowWithHeading:
             newButtonImage = [UIImage imageNamed:@"TrackingHeadingMask.png"];
             break;
+        case MGLUserTrackingModeFollowWithCourse:
+            newButtonImage = nil;
+            newButtonTitle = @"Course";
+            break;
     }
     
+    self.navigationItem.rightBarButtonItem.title = newButtonTitle;
     [UIView animateWithDuration:0.25 animations:^{
         self.navigationItem.rightBarButtonItem.image = newButtonImage;
     }];

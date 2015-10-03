@@ -8,7 +8,6 @@
 #include <mbgl/map/sprite.hpp>
 #include <mbgl/text/glyph_store.hpp>
 
-#include <mbgl/util/uv.hpp>
 #include <mbgl/util/ptr.hpp>
 #include <mbgl/util/noncopyable.hpp>
 #include <mbgl/util/chrono.hpp>
@@ -32,8 +31,7 @@ class Style : public GlyphStore::Observer,
               public Sprite::Observer,
               public util::noncopyable {
 public:
-    Style(MapData&,
-          uv_loop_t*);
+    Style(MapData&);
     ~Style();
 
     class Observer {
@@ -64,6 +62,11 @@ public:
     }
 
     Source* getSource(const std::string& id) const;
+    StyleLayer* getLayer(const std::string& id) const;
+
+    void addSource(std::unique_ptr<Source>);
+    void addLayer(util::ptr<StyleLayer>);
+    void addLayer(util::ptr<StyleLayer>, const std::string& beforeLayerID);
 
     MapData& data;
     std::unique_ptr<GlyphStore> glyphStore;

@@ -72,7 +72,8 @@ public:
 
     virtual Bucket* getBucket(const StyleLayer&) = 0;
 
-    virtual void redoPlacement(float, bool) {}
+    virtual bool reparse(std::function<void ()>) { return true; }
+    virtual void redoPlacement(float, float, bool) {}
 
     bool isReady() const {
         return isReadyState(state);

@@ -10,7 +10,7 @@
 using namespace mbgl;
 
 void Painter::renderTileDebug(const Tile& tile) {
-    gl::debugging::group group(std::string { "debug " } + std::string(tile.id));
+    MBGL_DEBUG_GROUP(std::string { "debug " } + std::string(tile.id));
     assert(tile.data);
     if (debug) {
         prepareTile(tile);
@@ -20,7 +20,7 @@ void Painter::renderTileDebug(const Tile& tile) {
 }
 
 void Painter::renderDebugText(DebugBucket& bucket, const mat4 &matrix) {
-    gl::debugging::group group("debug text");
+    MBGL_DEBUG_GROUP("debug text");
 
     config.depthTest = false;
 
@@ -47,7 +47,7 @@ void Painter::renderDebugText(DebugBucket& bucket, const mat4 &matrix) {
 }
 
 void Painter::renderDebugFrame(const mat4 &matrix) {
-    gl::debugging::group group("debug frame");
+    MBGL_DEBUG_GROUP("debug frame");
 
     // Disable depth test and don't count this towards the depth buffer,
     // but *don't* disable stencil test, as we want to clip the red tile border
@@ -59,7 +59,7 @@ void Painter::renderDebugFrame(const mat4 &matrix) {
     plainShader->u_matrix = matrix;
 
     // draw tile outline
-    tileBorderArray.bind(*plainShader, tileBorderBuffer, BUFFER_OFFSET(0));
+    tileBorderArray.bind(*plainShader, tileBorderBuffer, BUFFER_OFFSET_0);
     plainShader->u_color = {{ 1.0f, 0.0f, 0.0f, 1.0f }};
     lineWidth(4.0f * data.pixelRatio);
     MBGL_CHECK_ERROR(glDrawArrays(GL_LINE_STRIP, 0, (GLsizei)tileBorderBuffer.index()));

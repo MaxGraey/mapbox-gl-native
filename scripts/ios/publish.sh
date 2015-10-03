@@ -6,7 +6,7 @@ set -u
 
 #
 # iOS release tag format is `vX.Y.Z`; `X.Y.Z` gets passed in
-# In the case of symbolicated builds, we also append the `style`.
+# In the case of symbolicated builds, we also append the `-symbols`.
 #
 PUBLISH_VERSION="$1"
 
@@ -20,7 +20,7 @@ fi
 # zip
 #
 cd build/ios/pkg/static
-ZIP=mapbox-gl-ios-${PUBLISH_VERSION}${PUBLISH_STYLE}.zip
+ZIP=mapbox-ios-sdk-${PUBLISH_VERSION}${PUBLISH_STYLE}.zip
 rm -f ../${ZIP}
 zip -r ../${ZIP} *
 #

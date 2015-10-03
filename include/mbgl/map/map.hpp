@@ -25,6 +25,7 @@ class SpriteImage;
 class Transform;
 class PointAnnotation;
 class ShapeAnnotation;
+struct CameraOptions;
 
 namespace util {
 template <class T> class Thread;
@@ -57,6 +58,7 @@ public:
 
     // Pauses the render thread. The render thread will stop running but will not be terminated and will not lose state until resumed.
     void pause();
+    bool isPaused();
 
     // Resumes a paused render thread
     void resume();
@@ -66,14 +68,11 @@ public:
     using StillImageCallback = std::function<void(std::exception_ptr, std::unique_ptr<const StillImage>)>;
     void renderStill(StillImageCallback callback);
 
-    // Triggers a synchronous or asynchronous render.
-    bool renderSync();
-
-    // Nudges transitions one step, possibly notifying of the need for a rerender.
-    void nudgeTransitions(bool forceRerender);
+    // Triggers a synchronous render.
+    void renderSync();
 
     // Notifies the Map thread that the state has changed and an update might be necessary.
-    void update(Update update = Update::Nothing);
+    void update(Update update);
 
     // Styling
     void addClass(const std::string&);
@@ -84,6 +83,10 @@ public:
 
     void setDefaultTransitionDuration(const Duration& = Duration::zero());
     Duration getDefaultTransitionDuration() const;
+
+    void setDefaultTransitionDelay(const Duration& = Duration::zero());
+    Duration getDefaultTransitionDelay() const;
+
     void setStyleURL(const std::string& url);
     void setStyleJSON(const std::string& json, const std::string& base = "");
     std::string getStyleURL() const;
@@ -92,6 +95,10 @@ public:
     // Transition
     void cancelTransitions();
     void setGestureInProgress(bool);
+
+    // Camera
+    void jumpTo(CameraOptions options);
+    void easeTo(CameraOptions options);
 
     // Position
     void moveBy(double dx, double dy, const Duration& = Duration::zero());
@@ -106,8 +113,8 @@ public:
     void setZoom(double zoom, const Duration& = Duration::zero());
     double getZoom() const;
     void setLatLngZoom(LatLng latLng, double zoom, const Duration& = Duration::zero());
-    void fitBounds(LatLngBounds bounds, EdgeInsets padding, const Duration& duration = Duration::zero());
-    void fitBounds(AnnotationSegment segment, EdgeInsets padding, const Duration& duration = Duration::zero());
+    CameraOptions cameraForLatLngBounds(LatLngBounds bounds, EdgeInsets padding);
+    CameraOptions cameraForLatLngs(std::vector<LatLng> latLngs, EdgeInsets padding);
     void resetZoom();
     double getMinZoom() const;
     double getMaxZoom() const;
@@ -118,6 +125,10 @@ public:
     void setBearing(double degrees, double cx, double cy);
     double getBearing() const;
     void resetNorth();
+
+    // Pitch
+    void setPitch(double pitch, const Duration& = Duration::zero());
+    double getPitch() const;
 
     // Size
     uint16_t getWidth() const;

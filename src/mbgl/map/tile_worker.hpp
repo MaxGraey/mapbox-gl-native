@@ -1,11 +1,9 @@
 #ifndef MBGL_MAP_TILE_WORKER
 #define MBGL_MAP_TILE_WORKER
 
-#include <mbgl/util/variant.hpp>
+#include <mapbox/variant.hpp>
+
 #include <mbgl/map/tile_data.hpp>
-#include <mbgl/geometry/elements_buffer.hpp>
-#include <mbgl/geometry/fill_buffer.hpp>
-#include <mbgl/geometry/line_buffer.hpp>
 #include <mbgl/util/noncopyable.hpp>
 #include <mbgl/util/ptr.hpp>
 #include <mbgl/style/filter_expression.hpp>
@@ -43,7 +41,7 @@ public:
     Bucket* getBucket(const StyleLayer&) const;
 
     TileParseResult parse(const GeometryTile&);
-    void redoPlacement(float angle, bool collisionDebug);
+    void redoPlacement(float angle, float pitch, bool collisionDebug);
 
     std::vector<util::ptr<StyleLayer>> layers;
 
@@ -52,6 +50,7 @@ private:
 
     std::unique_ptr<Bucket> createFillBucket(const GeometryTileLayer&, const StyleBucket&);
     std::unique_ptr<Bucket> createLineBucket(const GeometryTileLayer&, const StyleBucket&);
+    std::unique_ptr<Bucket> createCircleBucket(const GeometryTileLayer&, const StyleBucket&);
     std::unique_ptr<Bucket> createSymbolBucket(const GeometryTileLayer&, const StyleBucket&);
 
     template <class Bucket>
@@ -66,13 +65,7 @@ private:
 
     bool partialParse = false;
 
-    FillVertexBuffer fillVertexBuffer;
-    LineVertexBuffer lineVertexBuffer;
-
-    TriangleElementsBuffer triangleElementsBuffer;
-    LineElementsBuffer lineElementsBuffer;
-
-    std::unique_ptr<CollisionTile> collision;
+    std::unique_ptr<CollisionTile> collisionTile;
 
     // Contains all the Bucket objects for the tile. Buckets are render
     // objects and they get added to this map as they get processed.

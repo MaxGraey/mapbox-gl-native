@@ -10,6 +10,10 @@ build/
 *.so
 *.apk
 
+# JNI
+MapboxGLAndroidSDK/src/main/jniLibs/
+MapboxGLAndroidSDK/src/main/obj.target/
+
 # Lib assets
 MapboxGLAndroidSDK/src/main/assets/
 
@@ -18,3 +22,6 @@ local.properties
 
 # Token file
 MapboxGLAndroidSDKTestApp/src/main/res/raw/token.txt
+
+# Twitter Fabric / Crashlytics
+fabric.properties

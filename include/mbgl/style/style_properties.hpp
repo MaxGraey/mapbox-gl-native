@@ -1,7 +1,8 @@
 #ifndef MBGL_STYLE_STYLE_PROPERTIES
 #define MBGL_STYLE_STYLE_PROPERTIES
 
-#include <mbgl/util/variant.hpp>
+#include <mapbox/variant.hpp>
+
 #include <mbgl/style/types.hpp>
 
 #include <array>
@@ -42,6 +43,20 @@ struct LineProperties {
 
     inline bool isVisible() const {
         return opacity > 0 && color[3] > 0 && width > 0;
+    }
+};
+
+struct CircleProperties {
+    inline CircleProperties() {}
+    float radius = 5.0f;
+    Color color = {{ 0, 0, 0, 1 }};
+    float opacity = 1.0f;
+    std::array<float, 2> translate = {{ 0, 0 }};
+    TranslateAnchorType translateAnchor = TranslateAnchorType::Map;
+    float blur = 0;
+
+    inline bool isVisible() const {
+        return radius > 0 && color[3] > 0 && opacity > 0;
     }
 };
 
@@ -100,6 +115,7 @@ struct BackgroundProperties {
 typedef mapbox::util::variant<
     FillProperties,
     LineProperties,
+    CircleProperties,
     SymbolProperties,
     RasterProperties,
     BackgroundProperties,

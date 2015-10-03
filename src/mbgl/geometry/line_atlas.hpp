@@ -1,11 +1,11 @@
 #ifndef MBGL_GEOMETRY_LINE_ATLAS
 #define MBGL_GEOMETRY_LINE_ATLAS
 
+#include <mbgl/platform/gl.hpp>
+
 #include <vector>
 #include <map>
 #include <memory>
-#include <mutex>
-#include <atomic>
 
 namespace mbgl {
 
@@ -17,7 +17,7 @@ typedef struct {
 
 class LineAtlas {
 public:
-    LineAtlas(uint16_t width, uint16_t height);
+    LineAtlas(GLsizei width, GLsizei height);
     ~LineAtlas();
 
     // Binds the atlas texture to the GPU, and uploads data if it is out of date.
@@ -30,14 +30,13 @@ public:
     LinePatternPos getDashPosition(const std::vector<float>&, bool);
     LinePatternPos addDash(const std::vector<float> &dasharray, bool round);
 
-    const int width;
-    const int height;
+    const GLsizei width;
+    const GLsizei height;
 
 private:
-    std::recursive_mutex mtx;
-    const std::unique_ptr<uint8_t[]> data;
-    std::atomic<bool> dirty;
-    uint32_t texture = 0;
+    const std::unique_ptr<GLbyte[]> data;
+    bool dirty;
+    GLuint texture = 0;
     int nextRow = 0;
     std::map<size_t, LinePatternPos> positions;
 };

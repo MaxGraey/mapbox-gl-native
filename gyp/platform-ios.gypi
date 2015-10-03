@@ -17,14 +17,14 @@
         '../platform/darwin/image.mm',
         '../platform/darwin/nsthread.mm',
         '../platform/darwin/reachability.m',
-        '../include/mbgl/ios/MapboxGL.h',
+        '../include/mbgl/ios/Mapbox.h',
         '../platform/ios/MGLMapboxEvents.h',
         '../platform/ios/MGLMapboxEvents.m',
+        '../include/mbgl/ios/MGLMapCamera.h',
+        '../platform/ios/MGLMapCamera.mm',
         '../include/mbgl/ios/MGLMapView.h',
         '../include/mbgl/ios/MGLMapView+IBAdditions.h',
         '../platform/ios/MGLMapView.mm',
-        '../platform/ios/MGLFileCache.h',
-        '../platform/ios/MGLFileCache.mm',
         '../include/mbgl/ios/MGLAccountManager.h',
         '../platform/ios/MGLAccountManager_Private.h',
         '../platform/ios/MGLAccountManager.m',
@@ -61,15 +61,17 @@
         '../platform/ios/NSString+MGLAdditions.m',
         '../platform/ios/vendor/SMCalloutView/SMCalloutView.h',
         '../platform/ios/vendor/SMCalloutView/SMCalloutView.m',
+        '../platform/ios/resources/',
       ],
 
       'variables': {
         'cflags_cc': [
-          '<@(uv_cflags)',
+          '<@(libuv_cflags)',
           '<@(boost_cflags)',
+          '<@(variant_cflags)',
         ],
         'libraries': [
-          '<@(uv_static_libs)',
+          '<@(libuv_static_libs)',
         ],
         'ldflags': [
           '-framework CoreLocation',
@@ -105,7 +107,7 @@
           '../include',
         ],
         'mac_bundle_resources': [
-          '<!@(find ./platform/ios/resources -type f)',
+          '<!@(find ./platform/ios/resources -type f \! -name "README")',
         ],
       },
     },
