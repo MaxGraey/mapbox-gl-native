@@ -1,7 +1,10 @@
 package com.mapbox.mapboxsdk.testapp;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
@@ -17,7 +20,7 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 
 public class Util {
-
+    
     public static String loadStringFromAssets(final Context context, final String fileName) throws IOException {
         if (TextUtils.isEmpty(fileName)) {
             throw new NullPointerException("No GeoJSON File Name passed in.");

@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.graphics.PointF;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -19,7 +18,6 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -31,11 +29,9 @@ import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.annotations.PolygonOptions;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.utils.ApiAccess;
 import com.mapbox.mapboxsdk.views.MapView;
 import io.fabric.sdk.android.Fabric;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,13 +60,16 @@ public class MainActivity extends AppCompatActivity {
     private MapView mMapView;
     private TextView mFpsTextView;
     private int mSelectedStyle = R.id.actionStyleMapboxStreets;
-    NavigationView mNavigationView;
+    private NavigationView mNavigationView;
 
     // Used for GPS
     private FloatingActionButton mLocationFAB;
 
     // Used for Annotations
     private boolean mIsAnnotationsOn = false;
+
+
+    private static final DecimalFormat latLngFormatter = new DecimalFormat("#.#####");
 
     //
     // Lifecycle events
@@ -102,56 +101,44 @@ public class MainActivity extends AppCompatActivity {
         }
 
         mMapView = (MapView) findViewById(R.id.mainMapView);
-        // Load the access token
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().openRawResource(R.raw.token)));
-            String line = reader.readLine();
-            mMapView.setAccessToken(line);
-        } catch (IOException e) {
-            Log.e(TAG, "Error loading access token from token.txt: " + e.toString());
-        }
-
+        mMapView.setAccessToken(ApiAccess.getToken(this));
         mMapView.onCreate(savedInstanceState);
+
         mMapView.setOnFpsChangedListener(new MyOnFpsChangedListener());
 
-        final GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
-            public void onLongPress(final MotionEvent e) {
-                float x = e.getX();
-                float y = e.getY();
-
-                // flip y direction vertically to match core GL
-                y = mMapView.getHeight() - y;
-
-                LatLng position = mMapView.fromScreenLocation(new PointF(x, y));
-
+        mMapView.setOnMapLongClickListener(new MapView.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng point) {
                 mMapView.addMarker(new MarkerOptions()
-                        .position(position)
+                        .position(point)
                         .title("Dropped Pin")
-                        .snippet(new DecimalFormat("#.#####").format(position.getLatitude()) + ", " +
-                                 new DecimalFormat("#.#####").format(position.getLongitude()))
-                        .sprite(null));
+                        .snippet(latLngFormatter.format(point.getLatitude()) + ", " +
+                                latLngFormatter.format(point.getLongitude()))
+                        .sprite("default_marker"));
             }
         });
 
-        mMapView.setOnTouchListener(new View.OnTouchListener() {
-            public boolean onTouch(View v, MotionEvent event) {
-                return gestureDetector.onTouchEvent(event);
+        mMapView.setOnMapClickListener(new MapView.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng point) {
+                String location = latLngFormatter.format(point.getLatitude()) + ", " +
+                        latLngFormatter.format(point.getLongitude());
+                Snackbar.make(findViewById(android.R.id.content), "Map Click Listener " + location, Snackbar.LENGTH_SHORT).show();
             }
         });
 
         mMapView.setOnMarkerClickListener(new MapView.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
-                Snackbar.make(findViewById(android.R.id.content),"Custom Marker Click Listener",Snackbar.LENGTH_SHORT).show();
-                marker.showInfoWindow();
-                return true;
+                Snackbar.make(findViewById(android.R.id.content), "Custom Marker Click Listener", Snackbar.LENGTH_SHORT).show();
+                return false;
             }
         });
 
         mFpsTextView = (TextView) findViewById(R.id.view_fps);
         mFpsTextView.setText("");
 
-        mLocationFAB = (FloatingActionButton)findViewById(R.id.locationFAB);
+        mLocationFAB = (FloatingActionButton) findViewById(R.id.locationFAB);
         mLocationFAB.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -201,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Called when our app goes into the background
     @Override
-    public void onPause()  {
+    public void onPause() {
         super.onPause();
 
         mMapView.onPause();
@@ -281,25 +268,25 @@ public class MainActivity extends AppCompatActivity {
                                 // Toggle debug mode
                                 mMapView.toggleDebug();
                                 toggleFpsCounter(mMapView.isDebugActive());
-                                menuItem.setChecked(mMapView.isDebugActive());
                                 return true;
 
                             case R.id.action_markers:
                                 // Toggle markers
                                 toggleAnnotations(!mIsAnnotationsOn);
-                                menuItem.setChecked(mIsAnnotationsOn);
                                 return true;
 
                             case R.id.action_compass:
                                 // Toggle compass
                                 mMapView.setCompassEnabled(!mMapView.isCompassEnabled());
-                                menuItem.setChecked(mMapView.isCompassEnabled());
                                 return true;
 
-                            case R.id.action_second_map_activity:
-                                startActivity(new Intent(getApplicationContext(), SecondMapActivity.class));
+                            case R.id.action_info_window_adapter:
+                                startActivity(new Intent(getApplicationContext(), InfoWindowAdapterActivity.class));
                                 return true;
 
+                            case R.id.action_map_fragment:
+                                startActivity(new Intent(getApplicationContext(), MapFragmentActivity.class));
+                                return true;
 /*
                             case R.id.followNone:
                                 mMapView.setUserLocationTrackingMode(MapView.UserLocationTrackingMode.NONE);
@@ -334,31 +321,26 @@ public class MainActivity extends AppCompatActivity {
         switch (id) {
             case R.id.actionStyleMapboxStreets:
                 mMapView.setStyleUrl(MapView.StyleUrls.MAPBOX_STREETS);
-                mNavigationView.getMenu().findItem(id).setChecked(true);
                 mSelectedStyle = id;
                 return true;
 
             case R.id.actionStyleEmerald:
                 mMapView.setStyleUrl(MapView.StyleUrls.EMERALD);
-                mNavigationView.getMenu().findItem(id).setChecked(true);
                 mSelectedStyle = id;
                 return true;
 
             case R.id.actionStyleLight:
                 mMapView.setStyleUrl(MapView.StyleUrls.LIGHT);
-                mNavigationView.getMenu().findItem(id).setChecked(true);
                 mSelectedStyle = id;
                 return true;
 
             case R.id.actionStyleDark:
                 mMapView.setStyleUrl(MapView.StyleUrls.DARK);
-                mNavigationView.getMenu().findItem(id).setChecked(true);
                 mSelectedStyle = id;
                 return true;
 
             case R.id.actionStyleSatellite:
                 mMapView.setStyleUrl(MapView.StyleUrls.SATELLITE);
-                mNavigationView.getMenu().findItem(id).setChecked(true);
                 mSelectedStyle = id;
                 return true;
 
@@ -369,13 +351,13 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Enabled / Disable GPS location updates along with updating the UI
+     *
      * @param enableGps true if GPS is to be enabled, false if GPS is to be disabled
      */
     private void toggleGps(boolean enableGps) {
         if (enableGps) {
             if ((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) ||
-                    (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED))
-            {
+                    (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSIONS_LOCATION);
             } else {
                 enableGps();
@@ -436,9 +418,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private Marker generateMarker(String title, String snippet, String sprite, double lat, double lng){
+    private Marker generateMarker(String title, String snippet, String sprite, double lat, double lng) {
         return new MarkerOptions()
-                .position(new LatLng(lat,lng))
+                .position(new LatLng(lat, lng))
                 .title(title)
                 .sprite(sprite)
                 .snippet(snippet)
@@ -455,7 +437,7 @@ public class MainActivity extends AppCompatActivity {
                     .width(2)
                     .color(Color.RED));
         } catch (Exception e) {
-            Log.e(TAG, "Error adding Polyline: "+ e);
+            Log.e(TAG, "Error adding Polyline: " + e);
             e.printStackTrace();
         }
     }
@@ -467,12 +449,12 @@ public class MainActivity extends AppCompatActivity {
             MapView map = mMapView;
             ArrayList<PolygonOptions> opts = new ArrayList<>();
             opts.add(new PolygonOptions()
-                        .add(latLngs)
-                        .strokeColor(Color.MAGENTA)
-                        .fillColor(Color.BLUE));
+                    .add(latLngs)
+                    .strokeColor(Color.MAGENTA)
+                    .fillColor(Color.BLUE));
             map.addPolygons(opts).get(0);
         } catch (Exception e) {
-            Log.e(TAG, "Error adding Polygon: "+ e);
+            Log.e(TAG, "Error adding Polygon: " + e);
             e.printStackTrace();
         }
     }

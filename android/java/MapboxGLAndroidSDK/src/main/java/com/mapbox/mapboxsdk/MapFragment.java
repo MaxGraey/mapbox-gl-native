@@ -1,4 +1,4 @@
-package com.mapbox.mapboxsdk.testapp;
+package com.mapbox.mapboxsdk;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.mapbox.mapboxsdk.utils.ApiAccess;
 import com.mapbox.mapboxsdk.views.MapView;
 
 public class MapFragment extends Fragment {
@@ -36,7 +37,10 @@ public class MapFragment extends Fragment {
         Log.v(TAG, "onCreateView");
 
         // Create the map
-        mMap = (MapView) inflater.inflate(R.layout.fragment_main, container, true);
+        mMap = (MapView) inflater.inflate(R.layout.mapview, container, false);
+
+        // Set accessToken
+        mMap.setAccessToken(ApiAccess.getToken(container.getContext()));
 
         // Need to pass on any saved state to the map
         mMap.onCreate(savedInstanceState);
@@ -104,6 +108,15 @@ public class MapFragment extends Fragment {
         // Need to retrieve any saved state from the map
         mMap.onSaveInstanceState(outState);
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onLowMemory() {
+        Log.v(TAG, "OnLowMemory");
+
+        // Need to pass on to view
+        mMap.onLowMemory();
+        super.onLowMemory();
     }
 
     //

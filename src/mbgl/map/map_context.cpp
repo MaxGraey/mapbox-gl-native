@@ -75,8 +75,9 @@ void MapContext::pause() {
     view.deactivate();
 
     std::unique_lock<std::mutex> lockPause(data.mutexPause);
-    data.condPaused.notify_all();
-    data.condResume.wait(lockPause);
+    data.paused = true;
+    data.condPause.notify_all();
+    data.condPause.wait(lockPause, [&]{ return !data.paused; });
 
     view.activate();
 
@@ -242,7 +243,12 @@ bool MapContext::renderSync(const TransformState& state, const FrameData& frame)
 
     view.afterRender();
 
-    if (style->hasTransitions() || painter->needsAnimation()) {
+    if (style->hasTransitions()) {
+        updateFlags |= Update::Classes;
+        asyncUpdate->send();
+    }
+
+    if (painter->needsAnimation()) {
         updateFlags |= Update::Repaint;
         asyncUpdate->send();
     }
